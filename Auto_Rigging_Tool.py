@@ -17,6 +17,7 @@ import maya.cmds as cmds
 def gui():
     scriptName = __name__    
     window_name = "Auto_armRig_Maker"
+
     
     if cmds.window(window_name, q=True, exists=True):
         cmds.deleteUI(window_name)    
@@ -356,13 +357,13 @@ def ikSetup(armType, oriName, labelName, iconColor, selected):
     pvType= cmds.radioButtonGrp("addPVElbow_Btn", q=True, sl=True)
     if armType == 3:
         ik_joints = []
-        new_dup = cmds.duplicate(selected[0])
+        new_dup = cmds.duplicate(selected[0],rc=True)
         dup_list = cmds.ls(new_dup, dag=True, type='joint')
         counter = 1
         for each in dup_list:
             new_name = cmds.rename(each, oriName + labelName + '_IK' + str(counter) + '_waste')
             ik_joints.append(new_name)
-            counter += 1
+            counter = counter + 1
     else:
         ik_joints = selected
 
@@ -420,13 +421,13 @@ def fkSetup(armType, oriName, labelName, iconColor, selected):
     # Naming the joints
     if armType == 3:
         fk_joints = []
-        new_dup = cmds.duplicate(selected[0])
+        new_dup = cmds.duplicate(selected[0],rc=True)
         dup_list = cmds.ls(new_dup, dag=True, type='joint')
         counter = 1
         for each in dup_list:
             new_name = cmds.rename(each, oriName + labelName + '_FK' + str(counter) + '_waste')
             fk_joints.append(new_name)
-            counter += 1
+            counter = counter + 1
     else:
         fk_joints = cmds.ls(sl=True, dag=True, type='joint')
     
@@ -486,7 +487,7 @@ def autoArmRig():
         counter = counter + 1
         new_list.append(newJoint)
     wasteName = new_list[-1].replace('_bind', '_waste')
-    wastFinal = cmds.rename(new_list[-1], wasteName)
+    wasteFinal = cmds.rename(new_list[-1], wasteName)
     selected = cmds.ls(new_list[0], dag=True, type='joint')
 
     # Making a joint pad
@@ -511,27 +512,28 @@ def autoArmRig():
         switchConst2 = cmds.orientConstraint(ik_list[1], fk_list[1], selected[1])
 
         #Adding hand icon and attr
-        cmds.addAttr('ARM_HAND_SCALE_TEST_DONT_DELETE.overrideEnabled',1)
+        cmds.setAttr('ARM_HAND_SCALE_TEST_DONT_DELETE.overrideEnabled',1)
         cmds.setAttr('ARM_HAND_SCALE_TEST_DONT_DELETE.overrideColor',(iconColor-1))
         cmds.makeIdentity('ARM_HAND_SCALE_TEST_DONT_DELETE', apply=True, t=1, r=1, s=1, n=0, pn=1)
         handPick = cmds.rename('ARM_HAND_SCALE_TEST_DONT_DELETE', oriName + labelName + '_hand_icon')
-        cmds.paren(handPick, w=True)
+        cmds.parent(handPick, w=True)
         cmds.addAttr(handPick, ln="IKFK_switch", at="double", min=0, max=1, dv=0, k=True)
 
         sel_len = len(selected)
         counter = 0
         while (counter<(sel_len-1)):
-                cmds.setAttr(handPick + 'IKFK_switch', 0)
-                cmds.setAttr(selected[counter] + '_orientConstraint1' + ik_list[counter] + 'W0', 1)
-                cmds.setAttr(selected[counter] + '_orientConstraint1' + fk_list[counter] + 'W1', 0)
-                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' + ik_list[counter] + 'W0', currentDriver= handPick + '_IKFK_Switch' )
-                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' + fk_list[counter] + 'W1', currentDriver= handPick + '_IKFK_Switch' )
-                cmds.setAttr(handPick + '_IKFK_Switch',1)
-                cmds.setAttr(selected[counter] + '_orientConstraint1' + ik_list[counter] + 'W0', 1)
-                cmds.setAttr(selected[counter] + '_orientConstraint1' + fk_list[counter] + 'W1', 0)
-                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' + ik_list[counter] + 'W0', currentDriver= handPick + '_IKFK_Switch' )
-                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' + fk_list[counter] + 'W1', currentDriver= handPick + '_IKFK_Switch' )
-                cmds.setAttr(handPick + '_IKFK_Switch',0)
+                cmds.setAttr(handPick + '.IKFK_switch', 0)
+                print(selected[counter] + '_orientConstraint1')
+                cmds.setAttr(selected[counter] + '_orientConstraint1' + '.' + ik_list[counter] + 'W0', 1)
+                cmds.setAttr(selected[counter] + '_orientConstraint1' + '.' + fk_list[counter] + 'W1', 0)
+                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' +'.' +  ik_list[counter] + 'W0', cd= handPick + '.IKFK_switch' )
+                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' +'.' +  fk_list[counter] + 'W1', cd= handPick + '.IKFK_switch' )
+                cmds.setAttr(handPick + '.IKFK_switch',1)
+                cmds.setAttr(selected[counter] + '_orientConstraint1' + '.' + ik_list[counter] + 'W0', 0)
+                cmds.setAttr(selected[counter] + '_orientConstraint1' + '.' + fk_list[counter] + 'W1', 1)
+                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' +'.' +  ik_list[counter] + 'W0', cd= handPick + '.IKFK_switch' )
+                cmds.setDrivenKeyframe(selected[counter] + '_orientConstraint1' +'.' +  fk_list[counter] + 'W1', cd= handPick + '.IKFK_switch' )
+                cmds.setAttr(handPick + '.IKFK_switch',0)
                 counter = counter + 1
 
         # adding the visibility swap
@@ -539,16 +541,16 @@ def autoArmRig():
         cmds.setAttr( ikIconPick + '.visibility', 1)
         cmds.setAttr( newPVIcon + '.visibility', 1)
         cmds.setAttr( fk01_pad + '.visibility', 0)
-        cmds.setDrivenKeyframe( fk01_pad + '.visibility', currentDriver= handPick + '_IKFK_Switch')
-        cmds.setDrivenKeyframe( ikIconPick + '.visibility', currentDriver= handPick + '_IKFK_Switch')
-        cmds.setDrivenKeyframe( newPVIcon + '.visibility', currentDriver= handPick + '_IKFK_Switch')
+        cmds.setDrivenKeyframe( fk01_pad + '.visibility', cd= handPick + '.IKFK_switch')
+        cmds.setDrivenKeyframe( ikIconPick + '.visibility', cd= handPick + '.IKFK_switch')
+        cmds.setDrivenKeyframe( newPVIcon + '.visibility', cd= handPick + '.IKFK_switch')
         cmds.setAttr( handPick + '.IKFK_switch', 1)
-        cmds.setAttr( ikIconPick + '.visibility', 1)
+        cmds.setAttr( ikIconPick + '.visibility', 0)
         cmds.setAttr( newPVIcon + '.visibility', 0)
-        cmds.setAttr( fk01_pad + '.visibility', 0)
-        cmds.setDrivenKeyframe( fk01_pad + '.visibility', currentDriver= handPick + '_IKFK_Switch')
-        cmds.setDrivenKeyframe( ikIconPick + '.visibility', currentDriver= handPick + '_IKFK_Switch')
-        cmds.setDrivenKeyframe( newPVIcon + '.visibility', currentDriver= handPick + '_IKFK_Switch')
+        cmds.setAttr( fk01_pad + '.visibility', 1)
+        cmds.setDrivenKeyframe( fk01_pad + '.visibility', cd= handPick + '.IKFK_switch')
+        cmds.setDrivenKeyframe( ikIconPick + '.visibility', cd= handPick + '.IKFK_switch')
+        cmds.setDrivenKeyframe( newPVIcon + '.visibility', cd= handPick + '.IKFK_switch')
         cmds.setAttr( handPick + '.IKFK_switch', 0)
 
         cmds.setAttr(ikIconPick + '.visibility', lock=True, keyable=False, channelBox=False)
